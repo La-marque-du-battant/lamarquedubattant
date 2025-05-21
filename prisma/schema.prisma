@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String      @id @default(uuid())
+  lastname    String?
+  firstname   String?
+  avatar      String?
+  email       String      @unique
+  password    String
+  birthday    DateTime?
+  phone       String?
+  address     String?
+  city        String?
+  role        Role        @default(CLIENT)
+  provider    String?
+  provider_id String?
+  events      EventUser[]
+  cartItems   CartItem[]
+  orders      Order[]
+  favorites   Favorite[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Collection {
+  id          String    @id @default(uuid())
+  name        String
+  image       String?
+  description String?
+  start_date  DateTime
+  end_date    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  categories CollectionCategory[]
+  products   Product[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  collections CollectionCategory[]
+  products    Product[]
+}
+
+model CollectionCategory {
+  id           String   @id @default(uuid())
+  collectionId String
+  categoryId   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([collectionId, categoryId])
+}
+
+model Product {
+  id                String      @id @default(uuid())
+  name              String
+  description       String?
+  price             Decimal
+  size              Json?
+  color             String?
+  quantity          Int         @default(0)
+  main_image        String
+  additional_images Json?
+  status            Status      @default(ACTIVE)
+  category          Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  categoryId        String
+  collection        Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  collectionId      String?
+  favorites         Favorite[]
+  cartItems         CartItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  image       String?
+  price       Decimal
+  country     String
+  address     String?
+  start_date  DateTime
+  end_date    DateTime?
+  users       EventUser[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model EventUser {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  eventId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId])
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  orderNo   String
+  quantity  Int
+  size      String?
+  color     String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId    String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId        String
+  orderNo       String
+  transactionId String
+  price         Float
+  status        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Favorite {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    String
+  sizeSelected String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, productId])
+}
+
+enum Role {
+  CLIENT
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Status {
+  INACTIVE // '0'
+  ACTIVE // '1'
+  ARCHIVED // '2'
+}
